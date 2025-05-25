@@ -4,27 +4,28 @@ from datetime import datetime
 import backtrader as bt
 from src.core.data import get_stock_data
 from src.core.strategy import MyStrategy
-from src.core.utils import get_date_input
+
+
 
 def run_backtest(stock_code, use_take_profit, take_profit, take_profit_size,
                  use_stop_loss, stop_loss, stop_loss_size,
                  use_sma_crossover, maperiod, start_cash, start_date=None, end_date=None):
     while True:
-        stock_df = get_stock_data(stock_code)
-        if not stock_df.empty:
+        stock_data = get_stock_data(stock_code)
+        if not stock_data.empty:
             break
         print("未找到对应股票数据，请检查代码格式（A股6位数字代码）")
         return None, None
 
     # 如果没有输入起始时间和结束时间，使用数据的最早和最晚日期
     if not start_date:
-        start_date = datetime.combine(stock_df.index.min().date(), datetime.min.time())
+        start_date = datetime.combine(stock_data.index.min().date(), datetime.min.time())
     if not end_date:
-        end_date = datetime.combine(stock_df.index.max().date(), datetime.min.time())
+        end_date = datetime.combine(stock_data.index.max().date(), datetime.min.time())
 
     # 修正开始日期
-    data_start = stock_df.index.min().date()
-    data_end = stock_df.index.max().date()
+    data_start = stock_data.index.min().date()
+    data_end = stock_data.index.max().date()
     if start_date.date() < data_start:
         print(f"警告：开始日期早于数据最早日期 ({data_start})，已自动修正")
         start_date = datetime.combine(data_start, datetime.min.time())
@@ -46,11 +47,11 @@ def run_backtest(stock_code, use_take_profit, take_profit, take_profit_size,
         start_date, end_date = end_date, start_date
 
     # 初始化回测引擎
-    cerebro = bt.Cerebro()
-    data = bt.feeds.PandasData(dataname=stock_df, fromdate=start_date, todate=end_date)
-    cerebro.adddata(data)
+    back_test_engine = bt.Cerebro()
+    data = bt.feeds.PandasData(dataname=stock_data, fromdate=start_date, todate=end_date)
+    back_test_engine.adddata(data)
 
-    cerebro.addstrategy(
+    back_test_engine.addstrategy(
         MyStrategy,
         start_date=start_date,
         end_date=end_date,
@@ -66,20 +67,20 @@ def run_backtest(stock_code, use_take_profit, take_profit, take_profit_size,
         sma_sell_size=stop_loss_size    # 这里假设均线卖出笔数和止损交易笔数相同
     )
 
-    cerebro.broker.setcash(start_cash)
-    cerebro.broker.setcommission(commission=0.002)
-    cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
-    cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trade')
+    back_test_engine.broker.setcash(start_cash)
+    back_test_engine.broker.setcommission(commission=0.002)
+    back_test_engine.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
+    back_test_engine.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trade')
 
     # 运行回测
-    results = cerebro.run()
+    results = back_test_engine.run()
     strat = results[0]
 
     # 分析结果
     drawdown_analysis = strat.analyzers.drawdown.get_analysis() if hasattr(strat.analyzers, 'drawdown') else {}
     drawdown_value = drawdown_analysis.get('max', {}).get('drawdown', 0.0) if isinstance(drawdown_analysis,
                                                                                          dict) else 0.0
-    port_value = cerebro.broker.getvalue()
+    port_value = back_test_engine.broker.getvalue()
     pnl = port_value - start_cash
 
     trade_count = 0
@@ -108,4 +109,4 @@ def run_backtest(stock_code, use_take_profit, take_profit, take_profit_size,
     report += f"交易次数: {trade_count} 次\n"
     report += '=' * 70
 
-    return report, cerebro
+    return report, back_test_engine

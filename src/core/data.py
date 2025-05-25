@@ -20,17 +20,17 @@ import pandas as pd
 
 def get_stock_data(symbol):
     try:
-        df = ak.stock_zh_a_hist(symbol=symbol, adjust="hfq")[['日期', '开盘', '收盘', '最高', '最低', '成交量']]
-        df.columns = ['date', 'open', 'close', 'high', 'low', 'volume'] #我们只要前六个
-        df.index = pd.to_datetime(df['date'])
+        data = ak.stock_zh_a_hist(symbol=symbol, adjust="hfq")[['日期', '开盘', '收盘', '最高', '最低', '成交量']]
+        data.columns = ['date', 'open', 'close', 'high', 'low', 'volume'] #我们只要前六个
+        data.index = pd.to_datetime(data['date'])
 
-        numeric_cols = ['open', 'close', 'high', 'low', 'volume']
-        for col in numeric_cols:
-            df[col] = pd.to_numeric(df[col], errors='coerce')
+        numeric_columns = ['open', 'close', 'high', 'low', 'volume']
+        for column in numeric_columns:
+            data[column] = pd.to_numeric(data[column], errors='coerce')
 
-        df[numeric_cols] = df[numeric_cols].ffill().bfill()
+        data[numeric_columns] = data[numeric_columns].ffill().bfill()
 
-        return df
+        return data
 
     except Exception as e:
         print(f"数据获取失败: {str(e)}")
@@ -40,10 +40,10 @@ def get_stock_data(symbol):
 def get_single_stock_ticks_data(market,stock_code,time):
     try:
 
-        df = ak.stock_intraday_sina(symbol=market + stock_code,date=time)
-        df.set_index('ticktime', inplace=True)
-        df.index = pd.to_datetime(df.index)
-        return df
+        data = ak.stock_intraday_sina(symbol=market + stock_code,date=time)
+        data.set_index('ticktime', inplace=True)
+        data.index = pd.to_datetime(data.index)
+        return data
 
     except Exception as e:
         print(f"数据获取错误: {e}")

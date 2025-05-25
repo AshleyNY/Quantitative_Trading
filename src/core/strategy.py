@@ -21,7 +21,7 @@ class MyStrategy(bt.Strategy):
         self.data_close = self.datas[0].close
         self.order = None
         self.buy_price = None
-        self.sma = None
+        self.sma = None #这里指的是平均移动线，是一种用于分析股票价格趋势的技术指标。它通过计算一定时间窗口内的价格平均值，来平滑价格数据，从而帮助我们识别趋势方向和价格变化。
         self.crossover = None
 
         if self.p.use_sma_crossover:
@@ -34,14 +34,6 @@ class MyStrategy(bt.Strategy):
         dt = self.datas[0].datetime.date(0)
         print(f"{dt.isoformat()} - {txt}")
 
-    def notify_order(self, order):
-        if order.status in [order.Completed]:
-            if order.isbuy():
-                self.log(f"已买入，价格: {order.executed.price:.2f}, 数量: {order.executed.size}")
-                self.buy_price = order.executed.price
-            else:
-                self.log(f"已卖出，价格: {order.executed.price:.2f}, 数量: {order.executed.size}")
-            self.order = None
 
     def next(self):
         if self.order:
@@ -54,15 +46,11 @@ class MyStrategy(bt.Strategy):
 
         if not self.position:
             if self.p.use_sma_crossover and self.crossover > 0:
-                self.log(f"均线买入信号: {self.data_close[0]:.2f}")
                 self.order = self.buy(size=self.p.sma_buy_size)
         else:
             if self.p.use_take_profit and self.buy_price and self.data_close[0] >= self.buy_price * self.p.take_profit:
-                self.log(f"触发止盈卖出: {self.data_close[0]:.2f}")
                 self.order = self.sell(size=self.p.take_profit_size)
             elif self.p.use_stop_loss and self.buy_price and self.data_close[0] < self.buy_price * self.p.stop_loss:
-                self.log(f"触发止损卖出: {self.data_close[0]:.2f}")
                 self.order = self.sell(size=self.p.stop_loss_size)
             elif self.p.use_sma_crossover and self.crossover < 0:
-                self.log(f"均线卖出信号: {self.data_close[0]:.2f}")
                 self.order = self.sell(size=self.p.sma_sell_size)

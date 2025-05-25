@@ -10,33 +10,33 @@ class StockBacktestGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("股票回测系统")
-        # 创建主框架
+
         self.main_frame = ttk.Frame(self.root, padding="10")
         self.main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
-        # 创建输入框和标签
+
         self.create_input_widgets()
 
-        # 创建开始回测按钮
+
         self.start_button = ttk.Button(self.main_frame, text="开始回测", command=self.start_backtest)
         self.start_button.grid(row=15, column=0, columnspan=2, pady=10)
 
-        # 创建文本框用于显示回测结果
+
         self.result_text = tk.Text(self.main_frame, height=20, width=80)
         self.result_text.grid(row=16, column=0, columnspan=2, pady=10)
 
     def create_input_widgets(self):
-        # 股票代码输入
+
         ttk.Label(self.main_frame, text="请输入股票代码（A股6位数字代码）：").grid(row=0, column=0, sticky=tk.W)
         self.stock_code_entry = ttk.Entry(self.main_frame)
         self.stock_code_entry.grid(row=0, column=1, pady=5)
         self.stock_code_entry.bind("<KeyRelease>", self.update_date_range)
 
-        # 止盈设置
         ttk.Label(self.main_frame, text="是否开启止盈功能（y/n）：").grid(row=1, column=0, sticky=tk.W)
-        self.use_take_profit_var = tk.StringVar()
-        self.use_take_profit_var.set('n')
-        ttk.Entry(self.main_frame, textvariable=self.use_take_profit_var).grid(row=1, column=1, pady=5)
+        self.use_take_profit_var = tk.BooleanVar()
+        self.use_take_profit_checkbox = ttk.Checkbutton(self.main_frame, variable=self.use_take_profit_var)
+        self.use_take_profit_checkbox.grid(row=1, column=1, pady=5)
+
 
         ttk.Label(self.main_frame, text="止盈比例（例如1.1表示10%止盈）：").grid(row=2, column=0, sticky=tk.W)
         self.take_profit_entry = ttk.Entry(self.main_frame)
@@ -48,11 +48,12 @@ class StockBacktestGUI:
         self.take_profit_size_entry.insert(0, '1000')
         self.take_profit_size_entry.grid(row=3, column=1, pady=5)
 
-        # 止损设置
+
         ttk.Label(self.main_frame, text="是否开启止损功能（y/n）：").grid(row=4, column=0, sticky=tk.W)
-        self.use_stop_loss_var = tk.StringVar()
-        self.use_stop_loss_var.set('n')
-        ttk.Entry(self.main_frame, textvariable=self.use_stop_loss_var).grid(row=4, column=1, pady=5)
+        self.use_stop_loss_var = tk.BooleanVar()
+        self.use_stop_loss_checkbox = ttk.Checkbutton(self.main_frame, variable=self.use_stop_loss_var)
+        self.use_stop_loss_checkbox.grid(row=4, column=1, pady=5)
+
 
         ttk.Label(self.main_frame, text="止损比例（例如0.95表示5%止损）：").grid(row=5, column=0, sticky=tk.W)
         self.stop_loss_entry = ttk.Entry(self.main_frame)
@@ -64,11 +65,11 @@ class StockBacktestGUI:
         self.stop_loss_size_entry.insert(0, '1000')
         self.stop_loss_size_entry.grid(row=6, column=1, pady=5)
 
-        # 均线交易设置
         ttk.Label(self.main_frame, text="是否开启均线交易功能（y/n）：").grid(row=7, column=0, sticky=tk.W)
-        self.use_sma_crossover_var = tk.StringVar()
-        self.use_sma_crossover_var.set('n')
-        ttk.Entry(self.main_frame, textvariable=self.use_sma_crossover_var).grid(row=7, column=1, pady=5)
+        self.use_sma_crossover_var = tk.BooleanVar()
+        self.use_sma_crossover_checkbox = ttk.Checkbutton(self.main_frame, variable=self.use_sma_crossover_var)
+        self.use_sma_crossover_checkbox.grid(row=7, column=1, pady=5)
+
 
         ttk.Label(self.main_frame, text="均线周期（如10表示10日均线，建议5 - 30）：").grid(row=8, column=0, sticky=tk.W)
         self.maperiod_entry = ttk.Entry(self.main_frame)
@@ -80,7 +81,7 @@ class StockBacktestGUI:
         self.start_cash_entry.insert(0, '1000000')
         self.start_cash_entry.grid(row=9, column=1, pady=5)
 
-        # 起始时间和结束时间输入
+
         ttk.Label(self.main_frame, text="起始时间 (YYYY-MM-DD)：").grid(row=10, column=0, sticky=tk.W)
         self.start_date_entry = ttk.Entry(self.main_frame)
         self.start_date_entry.grid(row=10, column=1, pady=5)
@@ -88,7 +89,7 @@ class StockBacktestGUI:
         ttk.Label(self.main_frame, text="结束时间 (YYYY-MM-DD)：").grid(row=11, column=0, sticky=tk.W)
         self.end_date_entry = ttk.Entry(self.main_frame)
         self.end_date_entry.grid(row=11, column=1, pady=5)
-        # 显示数据时间范围
+
         self.date_range_label = ttk.Label(self.main_frame, text="数据时间范围：未获取")
         self.date_range_label.grid(row=12, column=0, columnspan=2, pady=5)
 
@@ -106,13 +107,13 @@ class StockBacktestGUI:
             self.date_range_label.config(text="数据时间范围：未获取")
 
     def start_backtest(self):
-        # 获取输入值
+
         stock_code = self.stock_code_entry.get().strip()
         if not validate_stock_code(stock_code):
             messagebox.showerror("错误", "股票代码格式不正确，请输入6位纯数字代码。")
             return
 
-        use_take_profit = self.use_take_profit_var.get().strip().lower() == 'y'
+        use_take_profit = self.use_take_profit_var.get()
         try:
             take_profit = float(self.take_profit_entry.get().strip())
             take_profit_size = int(self.take_profit_size_entry.get().strip())
@@ -120,7 +121,7 @@ class StockBacktestGUI:
             messagebox.showerror("错误", "止盈比例或交易笔数输入无效，请输入有效的数字。")
             return
 
-        use_stop_loss = self.use_stop_loss_var.get().strip().lower() == 'y'
+        use_stop_loss = self.use_stop_loss_var.get()
         try:
             stop_loss = float(self.stop_loss_entry.get().strip())
             stop_loss_size = int(self.stop_loss_size_entry.get().strip())
@@ -128,7 +129,7 @@ class StockBacktestGUI:
             messagebox.showerror("错误", "止损比例或交易笔数输入无效，请输入有效的数字。")
             return
 
-        use_sma_crossover = self.use_sma_crossover_var.get().strip().lower() == 'y'
+        use_sma_crossover = self.use_sma_crossover_var.get()
         try:
             maperiod = int(self.maperiod_entry.get().strip())
             start_cash = float(self.start_cash_entry.get().strip())
@@ -136,22 +137,22 @@ class StockBacktestGUI:
             messagebox.showerror("错误", "均线周期或初始资金输入无效，请输入有效的数字。")
             return
 
-        # 检查均线周期范围
+
         if use_sma_crossover and not (5 <= maperiod <= 30):
             messagebox.showerror("错误", "均线周期应在5 - 30之间。")
             return
 
-        # 检查止盈比例
+
         if use_take_profit and take_profit <= 1:
             messagebox.showerror("错误", "止盈比例必须大于1。")
             return
 
-        # 检查止损比例
+
         if use_stop_loss and not (0 < stop_loss < 1):
             messagebox.showerror("错误", "止损比例应在0 - 1之间。")
             return
 
-        # 获取起始时间和结束时间
+
         start_date_str = self.start_date_entry.get().strip()
         end_date_str = self.end_date_entry.get().strip()
 
@@ -175,7 +176,7 @@ class StockBacktestGUI:
             messagebox.showerror("错误", "开始日期不能晚于结束日期。")
             return
 
-        # 调用回测函数
+
         try:
             report, cerebro = run_backtest(stock_code, use_take_profit, take_profit, take_profit_size,
                                   use_stop_loss, stop_loss, stop_loss_size,
