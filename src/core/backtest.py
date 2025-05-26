@@ -1,4 +1,5 @@
 # src/backtest.py
+"""全文最复杂的部分"""
 
 from datetime import datetime,time,date
 import backtrader as bt
@@ -18,13 +19,11 @@ def run_daily_backtest(stock_code, use_take_profit, take_profit, take_profit_siz
         print("未找到对应股票数据，请检查代码格式（A股6位数字代码）")
         return None, None
 
-    # 如果没有输入起始时间和结束时间，使用数据的最早和最晚日期
     if not start_date:
         start_date = datetime.combine(stock_data.index.min().date(), datetime.min.time())
     if not end_date:
         end_date = datetime.combine(stock_data.index.max().date(), datetime.min.time())
 
-    # 修正开始日期
     data_start = stock_data.index.min().date()
     data_end = stock_data.index.max().date()
     if start_date.date() < data_start:
@@ -34,7 +33,6 @@ def run_daily_backtest(stock_code, use_take_profit, take_profit, take_profit_siz
         print(f"警告：开始日期晚于数据最新日期 ({data_end})，已自动修正")
         start_date = datetime.combine(data_end, datetime.min.time())
 
-    # 修正结束日期
     if end_date.date() > data_end:
         print(f"警告：结束日期晚于数据最新日期 ({data_end})，已自动修正")
         end_date = datetime.combine(data_end, datetime.min.time())
@@ -42,12 +40,10 @@ def run_daily_backtest(stock_code, use_take_profit, take_profit, take_profit_siz
         print(f"警告：结束日期早于数据最早日期 ({data_start})，已自动修正")
         end_date = datetime.combine(data_start, datetime.min.time())
 
-    # 检查日期顺序
     if start_date > end_date:
         print(f"错误：开始日期 {start_date.date()} 晚于结束日期 {end_date.date()}，已自动交换")
         start_date, end_date = end_date, start_date
 
-    # 初始化回测引擎
     back_test_engine = bt.Cerebro()
     data = bt.feeds.PandasData(dataname=stock_data, fromdate=start_date, todate=end_date)
     back_test_engine.adddata(data)
@@ -72,11 +68,9 @@ def run_daily_backtest(stock_code, use_take_profit, take_profit, take_profit_siz
     back_test_engine.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
     back_test_engine.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trade')
 
-    # 运行回测
     results = back_test_engine.run()
     strat = results[0]
 
-    # 分析结果
     drawdown_analysis = strat.analyzers.drawdown.get_analysis() if hasattr(strat.analyzers, 'drawdown') else {}
     drawdown_value = drawdown_analysis.get('max', {}).get('drawdown', 0.0) if isinstance(drawdown_analysis,
                                                                                          dict) else 0.0
@@ -91,7 +85,6 @@ def run_daily_backtest(stock_code, use_take_profit, take_profit, take_profit_siz
         except KeyError:
             trade_count = 0
 
-    # 生成报告
     report = f"\n{'=' * 30} 回测报告 {'=' * 30}\n"
     report += f"股票代码: {stock_code}\n"
     report += f"回测时间: {start_date.strftime('%Y-%m-%d')} 至 {end_date.strftime('%Y-%m-%d')}\n"
@@ -108,21 +101,33 @@ def run_daily_backtest(stock_code, use_take_profit, take_profit, take_profit_siz
     report += f"最大回撤: {float(drawdown_value):.2f}%" if drawdown_value and float(drawdown_value) > 0 else "最大回撤: N/A (未触发持仓变动)\n"
     report += f"交易次数: {trade_count} 次\n"
     report += '=' * 70
-
     return report, back_test_engine
 
-def run_ticks_backtest(stock_code,price_period,volume_period,stop_by_profit, profit_rate, profit_size,
-                       stop_by_loss, loss_rate, loss_size,
-                       buy_size, sell_size, start_cash, date):
 
+def run_ticks_backtest(stock_code,
+                       price_period,
+                       volume_period,
+                       stop_by_profit,
+                       profit_rate,
+                       profit_size,
+                       stop_by_loss,
+                       loss_rate,
+                       loss_size,
+                       buy_size,
+                       sell_size,
+                       start_cash, date):
+
+    """只要让客户端输入当天的日期好了，后面的在这里计算"""
     opentime = time(hour=9, minute=30, second=0)
     closetime = time(hour=15, minute=0, second=0)
     real_start_date = datetime.combine(date,opentime)
     real_end_date = datetime.combine(date,closetime)
 
+    """别问我为什么这里有个real，下文的v_start/end_date代表虚拟的，因为我原本打算写一个实时交易的回测，但是backtrader不支持分为单位的回测，只能把
+    分秒映射成从1970年开始的年和日，再调用它的日单位回测了，虽然索引不同，但是结果是一样的，无所谓"""
 
     while True:
-        stock_data = get_single_stock_ticks_data_transfer(stock_code,real_start_date,real_end_date)
+        stock_data = get_single_stock_ticks_data_transfer(stock_code,real_start_date,real_end_date)#transfer代表已经映射转化过的
         if not stock_data.empty:
             print("成功获取股票数据")
             break
@@ -133,6 +138,7 @@ def run_ticks_backtest(stock_code,price_period,volume_period,stop_by_profit, pro
 
     back_test_ticks_engine = bt.Cerebro()
     data = bt.feeds.PandasData(dataname=stock_data,fromdate=v_start_date,todate=v_end_date)
+    #这里测试了一下，如果你们要喂它数据，起码要包括这三个参数，不然不会返回任何结果
     back_test_ticks_engine.adddata(data)
 
     back_test_ticks_engine.addstrategy(
@@ -152,13 +158,13 @@ def run_ticks_backtest(stock_code,price_period,volume_period,stop_by_profit, pro
     )
     back_test_ticks_engine.broker.setcommission(commission=0.005)
     back_test_ticks_engine.broker.setcash(start_cash)
-    back_test_ticks_engine.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
-    back_test_ticks_engine.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trade')
+
+    back_test_ticks_engine.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')#这玩意我不知道，是看掘金的
+    back_test_ticks_engine.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trade')#这玩意我不知道，是看掘金的
 
     results = back_test_ticks_engine.run()
     strat = results[0]
 
-    # 分析结果
     drawdown_analysis = strat.analyzers.drawdown.get_analysis() if hasattr(strat.analyzers, 'drawdown') else {}
     drawdown_value = drawdown_analysis.get('max', {}).get('drawdown', 0.0) if isinstance(drawdown_analysis,
                                                                                          dict) else 0.0
@@ -173,7 +179,6 @@ def run_ticks_backtest(stock_code,price_period,volume_period,stop_by_profit, pro
         except KeyError:
             trade_count = 0
 
-    # 生成报告
     report = f"\n{'=' * 30} 回测报告 {'=' * 30}\n"
     report += f"股票代码: {stock_code}\n"
     report += f"回测时间: {real_start_date.strftime('%Y-%m-%d %H:%M:%S' )} 至 {real_end_date.strftime('%Y-%m-%d %H:%M:%S')}\n"
@@ -190,4 +195,4 @@ def run_ticks_backtest(stock_code,price_period,volume_period,stop_by_profit, pro
     report += f"交易次数: {trade_count} 次\n"
     report += '=' * 70
 
-    return report, back_test_ticks_engine
+    return report, back_test_ticks_engine #返回一个引擎来画图，如果你返回report要自己画一个plot，那也OK

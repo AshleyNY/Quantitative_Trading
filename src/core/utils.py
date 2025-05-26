@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
-import backtrader as bt
 from src.core.data import get_single_stock_history_data
+
+"""这是一个工具类，用于存放一些复用工具函数"""
 
 
 def update_date_range(stock_code, date_range_label):
@@ -16,8 +17,8 @@ def update_date_range(stock_code, date_range_label):
     else:
         date_range_label.config(text="数据时间范围：未获取")
 
+
 def validate_stock_code(code: str) -> bool:
-    """验证股票代码格式是否符合A股规则"""
     valid_prefix = ['60', '000', '300', '688', '002']
     if not code.isdigit():
         print("错误：股票代码必须为纯数字")
@@ -31,7 +32,6 @@ def validate_stock_code(code: str) -> bool:
 
 
 def get_date_input(prompt: str, default_date: datetime = None) -> datetime:
-    """安全获取日期输入"""
     while True:
         date_str = input(prompt).strip()
         if not date_str and default_date:
@@ -44,23 +44,22 @@ def get_date_input(prompt: str, default_date: datetime = None) -> datetime:
 
 
 """愚蠢的方法，把分钟转换为日期，用于回测，因为backtrader的时间单位最小只支持到day，只能把分钟转化为一个虚拟的日期来用了"""
-def min2date(start_time,end_time):
-    #传入的类型应当是2025-05-26 09:30:00 和 2025-05-26 15:00:00
 
-    #计算一波有end_time到start_time之间多少秒
+
+def min2date(start_time, end_time):
+    # 我设定的是传入的类型应当是2025-05-26 09:30:00 和 2025-05-26 15:00:00
+    # 计算一波有end_time到start_time之间多少秒
     minutes = end_time - start_time
+    days = int(minutes.total_seconds() / 60)
 
-    days = int(minutes.total_seconds()/60)
-
-    virtual_start_time = datetime(1970,1,1)
+    virtual_start_time = datetime(1970, 1, 1)
     virtual_end_time = virtual_start_time + timedelta(days=days)
 
-    return virtual_start_time,virtual_end_time
+    return virtual_start_time, virtual_end_time
+
 
 def data_min2date_rename(df):
-    #传入的类型应当是一个dataframe，里面的index是datetime类型
+    # 传入的类型应当是一个dataframe，里面的index是datetime类型
     minutes = df.index().max() - df.index().min()
-    days = int(minutes.total_seconds()/60)
-
-    for dt in df['date']:
-        df
+    days = int(minutes.total_seconds() / 60)
+    """暂时作废了，有时间重做"""

@@ -1,17 +1,16 @@
 from datetime import datetime
 from tkinter import ttk, messagebox
-
 import tkinter as tk
-
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
 from src.core.backtest import run_daily_backtest
 from src.core.utils import update_date_range
-# 指定支持中文的字体
+
+
 plt.rcParams['font.family'] = 'SimHei'
-# 解决负号显示问题
+
 plt.rcParams['axes.unicode_minus'] = False
+
 
 class DailyPage:
     def __init__(self, parent):
@@ -19,19 +18,23 @@ class DailyPage:
         self.init_daily_page()
 
     def init_daily_page(self):
-        # 日交易策略页面布局
-        # 标题
+
         title_label = ttk.Label(self.frame, text="日交易策略回测", font=("SimHei", 16, "bold"))
         title_label.pack(pady=20)
 
-        # 创建日交易策略的输入表单
+        """人机交互的表单，这样写比较有可读性"""
         self.create_daily_form(self.frame)
 
-        # 创建回测结果显示区域
+        """这个结果显示的图形还没开发完，暂时先显示文字反馈得了"""
         self.create_result_frame(self.frame)
 
+
+    """注意一下，row是列项排版，column是行项排版,具体可以参考知乎上的tk教程！！
+        声明一下规范！！：同志们写控件“widgets”，一定要注释这个控件名字，然后
+        注意留白分区，不然难看的一批
+    """
+
     def create_daily_form(self, parent):
-        # 创建日交易策略的表单控件
         form_frame = ttk.LabelFrame(parent, text="策略参数设置")
         form_frame.pack(fill=tk.X, padx=20, pady=10)
 
@@ -39,19 +42,20 @@ class DailyPage:
         ttk.Label(form_frame, text="股票代码:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
         self.daily_stock_code = ttk.Entry(form_frame, width=15)
         self.daily_stock_code.grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
-        self.daily_stock_code.insert(0, "600519")
+        self.daily_stock_code.insert(0, "0")
+        self.daily_stock_code.bind("<KeyRelease>", self.update_date_range)
 
         # 开始日期
         ttk.Label(form_frame, text="开始日期:").grid(row=0, column=2, sticky=tk.W, padx=5, pady=5)
         self.daily_start_date = ttk.Entry(form_frame, width=12)
         self.daily_start_date.grid(row=0, column=3, sticky=tk.W, padx=5, pady=5)
-        self.daily_start_date.insert(0, "2023-01-01")
+        self.daily_start_date.insert(0, "2024-01-01")
 
         # 结束日期
         ttk.Label(form_frame, text="结束日期:").grid(row=0, column=4, sticky=tk.W, padx=5, pady=5)
         self.daily_end_date = ttk.Entry(form_frame, width=12)
         self.daily_end_date.grid(row=0, column=5, sticky=tk.W, padx=5, pady=5)
-        self.daily_end_date.insert(0, "2023-12-31")
+        self.daily_end_date.insert(0, "2024-12-31")
 
         # 均线周期
         ttk.Label(form_frame, text="均线周期:").grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
@@ -63,12 +67,12 @@ class DailyPage:
         ttk.Label(form_frame, text="止盈比例:").grid(row=1, column=2, sticky=tk.W, padx=5, pady=5)
         self.daily_take_profit = ttk.Entry(form_frame, width=5)
         self.daily_take_profit.grid(row=1, column=3, sticky=tk.W, padx=5, pady=5)
-        self.daily_take_profit.insert(0, "1.1")
+        self.daily_take_profit.insert(0, "1.2")
 
         ttk.Label(form_frame, text="止损比例:").grid(row=1, column=4, sticky=tk.W, padx=5, pady=5)
         self.daily_stop_loss = ttk.Entry(form_frame, width=5)
         self.daily_stop_loss.grid(row=1, column=5, sticky=tk.W, padx=5, pady=5)
-        self.daily_stop_loss.insert(0, "0.95")
+        self.daily_stop_loss.insert(0, "0.8")
 
         # 复选框 - 策略开关
         self.daily_use_sma_var = tk.BooleanVar(value=True)
@@ -84,7 +88,7 @@ class DailyPage:
         ttk.Label(form_frame, text="初始资金:").grid(row=3, column=0, sticky=tk.W, padx=5, pady=5)
         self.daily_start_cash = ttk.Entry(form_frame, width=15)
         self.daily_start_cash.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
-        self.daily_start_cash.insert(0, "100000")
+        self.daily_start_cash.insert(0, "100000000")
 
         # 交易笔数
         ttk.Label(form_frame, text="交易笔数:").grid(row=3, column=2, sticky=tk.W, padx=5, pady=5)
@@ -116,11 +120,6 @@ class DailyPage:
         scrollbar = ttk.Scrollbar(result_frame, command=self.result_text.yview)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.result_text.config(yscrollcommand=scrollbar.set)
-
-        # 创建图表区域
-        self.fig, self.ax = plt.subplots(figsize=(8, 4))
-        self.canvas = FigureCanvasTkAgg(self.fig, master=parent)
-        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
 
     def run_daily_backtest(self):
         # 获取表单数据

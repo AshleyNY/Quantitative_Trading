@@ -5,8 +5,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from datetime import datetime
 from src.core.backtest import run_ticks_backtest
 from src.core.utils import update_date_range
+
 plt.rcParams['font.family'] = 'SimHei'
-# 解决负号显示问题
 plt.rcParams['axes.unicode_minus'] = False
 
 class TicksPage:
@@ -15,18 +15,22 @@ class TicksPage:
         self.init_ticks_page()
 
     def init_ticks_page(self):
-        # 分时交易策略页面布局
-        # 标题
+
         title_label = ttk.Label(self.frame, text="分时交易策略回测", font=("SimHei", 16, "bold"))
         title_label.pack(pady=20)
 
-        # 创建分时交易策略的输入表单
-        self.create_ticks_form(self.frame)
 
-        # 创建回测结果显示区域
+        self.create_ticks_form(self.frame)
         self.create_result_frame(self.frame)
 
+
+    """注意一下，row是列项排版，column是行项排版,具体可以参考知乎上的tk教程！！
+         声明一下规范！！：同志们写控件“widgets”，一定要注释这个控件名字，然后
+         注意留白分区，不然难看的一批
+     """
+
     def create_ticks_form(self, parent):
+
         # 创建分时交易策略的表单控件
         form_frame = ttk.LabelFrame(parent, text="策略参数设置")
         form_frame.pack(fill=tk.X, padx=20, pady=10)
@@ -35,9 +39,10 @@ class TicksPage:
         ttk.Label(form_frame, text="股票代码:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
         self.ticks_stock_code = ttk.Entry(form_frame, width=15)
         self.ticks_stock_code.grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
-        self.ticks_stock_code.insert(0, "601069")
+        self.ticks_stock_code.insert(0, "0")
         self.ticks_stock_code.bind("<KeyRelease>", self.update_date_range)
 
+        """每一个控件的横竖间隔都是2个单位，row和column"""
 
         # 日期
         ttk.Label(form_frame, text="日期:").grid(row=0, column=2, sticky=tk.W, padx=5, pady=5)
@@ -49,24 +54,24 @@ class TicksPage:
         ttk.Label(form_frame, text="价格均线周期:").grid(row=0, column=4, sticky=tk.W, padx=5, pady=5)
         self.ticks_price_period = ttk.Entry(form_frame, width=12)
         self.ticks_price_period.grid(row=0, column=5, sticky=tk.W, padx=5, pady=5)
-        self.ticks_price_period.insert(0, "5")
+        self.ticks_price_period.insert(0, "10")
 
         # 止盈止损设置
         ttk.Label(form_frame, text="止盈比例:").grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
         self.ticks_take_profit = ttk.Entry(form_frame, width=5)
         self.ticks_take_profit.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
-        self.ticks_take_profit.insert(0, "1.02")
+        self.ticks_take_profit.insert(0, "1.20")
 
         ttk.Label(form_frame, text="止损比例:").grid(row=1, column=2, sticky=tk.W, padx=5, pady=5)
         self.ticks_stop_loss = ttk.Entry(form_frame, width=5)
         self.ticks_stop_loss.grid(row=1, column=3, sticky=tk.W, padx=5, pady=5)
-        self.ticks_stop_loss.insert(0, "0.98")
+        self.ticks_stop_loss.insert(0, "0.90")
 
         #这个是数量均线周期
         ttk.Label(form_frame, text="交易量均线周期:").grid(row=1, column=4, sticky=tk.W, padx=5, pady=5)
         self.ticks_volume_period = ttk.Entry(form_frame, width=12)
         self.ticks_volume_period.grid(row=1, column=5, sticky=tk.W, padx=5, pady=5)
-        self.ticks_volume_period.insert(0, "5")
+        self.ticks_volume_period.insert(0, "10")
 
 
         # 复选框 - 策略开关
@@ -80,7 +85,7 @@ class TicksPage:
         ttk.Label(form_frame, text="初始资金:").grid(row=3, column=0, sticky=tk.W, padx=5, pady=5)
         self.ticks_start_cash = ttk.Entry(form_frame, width=15)
         self.ticks_start_cash.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
-        self.ticks_start_cash.insert(0, "100000")
+        self.ticks_start_cash.insert(0, "100000000")
 
         # 交易笔数
         ttk.Label(form_frame, text="交易笔数:").grid(row=3, column=2, sticky=tk.W, padx=5, pady=5)
@@ -113,11 +118,6 @@ class TicksPage:
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.result_text.config(yscrollcommand=scrollbar.set)
 
-        # 创建图表区域
-        self.fig, self.ax = plt.subplots(figsize=(8, 4))
-        self.canvas = FigureCanvasTkAgg(self.fig, master=parent)
-        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
-
     def run_ticks_backtest(self):
         # 获取表单数据
         stock_code = self.ticks_stock_code.get()
@@ -131,19 +131,16 @@ class TicksPage:
         price_period = int(self.ticks_price_period.get())
         volume_period = int(self.ticks_volume_period.get())
 
-        # 转换日期格式
         try:
             date = datetime.strptime(date_str, "%Y-%m-%d")
         except ValueError:
             messagebox.showerror("日期格式错误", "请使用YYYY-MM-DD格式输入日期")
             return
 
-        # 清空结果区域
+
         self.result_text.delete(1.0, tk.END)
 
-        # 运行分时回测
         try:
-            # 这里调用你的分时回测函数
             report, back_test_ticks_engine = run_ticks_backtest(
                 stock_code=stock_code,
                 date=date,
@@ -156,16 +153,12 @@ class TicksPage:
                 loss_rate=loss_rate,
                 loss_size=trade_size,
                 stop_by_loss=stop_by_loss,
-                buy_size=trade_size,  # 这里假设均线买入笔数和止盈交易笔数相同
-                sell_size=trade_size  # 这里假设均线卖出笔数和止损交易笔数相同
+                buy_size=trade_size,
+                sell_size=trade_size
             )
 
-            # 在实际应用中，你需要从回测结果中提取数据并更新UI
-            # 这里只是一个示例，你需要根据你的回测函数返回值进行调整
             if report and back_test_ticks_engine:
-                # 在文本框中显示回测结果
                 self.result_text.insert(tk.END, report)
-                # 绘制图表
                 strategy_instance = back_test_ticks_engine.runstrats[0][0]
                 back_test_ticks_engine.plot(
                     style='candlestick',

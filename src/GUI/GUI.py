@@ -11,22 +11,17 @@ class StockBacktestGUI:
         self.root.title("股票量化交易回测系统")
         self.root.geometry("1000x700")
 
-        # 创建Notebook组件（选项卡容器）
+        #选项卡
         self.notebook = ttk.Notebook(root)
         self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # 创建日交易策略页面
+        # 日K
         self.daily_page = DailyPage(self.notebook)
         self.notebook.add(self.daily_page.frame, text="日交易策略")
 
-        # 创建分时交易策略页面
+        # 分时
         self.ticks_page = TicksPage(self.notebook)
         self.notebook.add(self.ticks_page.frame, text="分时交易策略")
-
-
-
-
-
 
 
 
