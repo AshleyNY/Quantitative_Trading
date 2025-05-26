@@ -1,10 +1,49 @@
 import tkinter as tk
+import tkinter.ttk as ttk
+
+from src.GUI.daily_page import DailyPage
+from src.GUI.ticks_page import TicksPage
+
+
+class StockBacktestGUI:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("股票量化交易回测系统")
+        self.root.geometry("1000x700")
+
+        # 创建Notebook组件（选项卡容器）
+        self.notebook = ttk.Notebook(root)
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        # 创建日交易策略页面
+        self.daily_page = DailyPage(self.notebook)
+        self.notebook.add(self.daily_page.frame, text="日交易策略")
+
+        # 创建分时交易策略页面
+        self.ticks_page = TicksPage(self.notebook)
+        self.notebook.add(self.ticks_page.frame, text="分时交易策略")
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+
+import tkinter as tk
 from tkinter import messagebox
-from src.core.backtest import run_backtest
-from src.core.data import get_stock_data
+from src.core.backtest import run_daily_backtest
+from src.core.data import get_single_stock_history_data
 from src.core.utils import validate_stock_code
 import tkinter.ttk as ttk
 from datetime import datetime
+
 
 class StockBacktestGUI:
     def __init__(self, root):
@@ -96,7 +135,7 @@ class StockBacktestGUI:
     def update_date_range(self, event=None):
         stock_code = self.stock_code_entry.get().strip()
         if validate_stock_code(stock_code):
-            stock_df = get_stock_data(stock_code)
+            stock_df = get_single_stock_history_data(stock_code)
             if not stock_df.empty:
                 data_start = stock_df.index.min().date()
                 data_end = stock_df.index.max().date()
@@ -178,9 +217,9 @@ class StockBacktestGUI:
 
 
         try:
-            report, cerebro = run_backtest(stock_code, use_take_profit, take_profit, take_profit_size,
-                                  use_stop_loss, stop_loss, stop_loss_size,
-                                  use_sma_crossover, maperiod, start_cash, start_date, end_date)
+            report, cerebro = run_daily_backtest(stock_code, use_take_profit, take_profit, take_profit_size,
+                                                 use_stop_loss, stop_loss, stop_loss_size,
+                                                 use_sma_crossover, maperiod, start_cash, start_date, end_date)
             if report and cerebro:
                 # 在文本框中显示回测结果
                 self.result_text.delete(1.0, tk.END)
@@ -197,3 +236,4 @@ class StockBacktestGUI:
                 messagebox.showinfo("回测完成", "回测已成功完成，请查看输出结果。")
         except Exception as e:
             messagebox.showerror("错误", f"回测过程中出现错误：{str(e)}")
+"""
